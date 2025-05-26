@@ -3,23 +3,19 @@ const restify = require('restify');
 const { CloudAdapter, ConfigurationServiceClientCredentialFactory, TurnContext } = require('botbuilder');
 const { saveSubscriber, getSubscribers } = require('./db');
 
-// Create credential factory
 const credentialFactory = new ConfigurationServiceClientCredentialFactory({
   MicrosoftAppId: process.env.MICROSOFT_APP_ID,
   MicrosoftAppPassword: process.env.MICROSOFT_APP_PASSWORD,
   MicrosoftAppType: 'MultiTenant',
 });
 
-// Initialize CloudAdapter
 const adapter = new CloudAdapter(credentialFactory);
 
-// Error handler
 adapter.onTurnError = async (context, error) => {
   console.error('Bot error:', error);
   await context.sendActivity('Sorry, something went wrong.');
 };
 
-// Create and configure server
 const server = restify.createServer();
 server.use(restify.plugins.bodyParser());
 
@@ -27,9 +23,8 @@ server.listen(3978, () => {
   console.log(`🤖 Bot running at http://localhost:3978`);
 });
 
-// Handle Teams messages
-server.post('/api/messages', (req, res) => {
-  adapter.process(req, res, async (context) => {
+server.post('/api/messages', async (req, res) => {
+  await adapter.process(req, res, async (context) => {
     if (context.activity.type === 'message') {
       const message = context.activity.text.trim().toLowerCase();
 
@@ -37,7 +32,7 @@ server.post('/api/messages', (req, res) => {
         const reference = TurnContext.getConversationReference(context.activity);
         const userId = context.activity.from.id;
 
-        saveSubscriber(userId, reference, {
+        await saveSubscriber(userId, reference, {
           name: context.activity.from.name,
           team: context.activity.conversation.tenantId,
         });
@@ -56,7 +51,7 @@ server.post('/notify', async (req, res) => {
     ? req.body.message
     : '📞 Incoming call alert!';
 
-  const subs = getSubscribers();
+  const subs = await getSubscribers();
 
   if (subs.length === 0) {
     console.log('No subscribers to notify.');

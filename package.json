@@ -12,6 +12,7 @@
   "dependencies": {
     "botbuilder": "^4.23.2",
     "dotenv": "^16.5.0",
+    "pg": "^8.16.0",
     "restify": "^11.1.0"
   }
 }
